@@ -84,7 +84,7 @@ class TestSnapshotCountFirstFlush(MaxSnapshotsScenario):
             expected = min(i, snapshot_max_count)
             assert logs[i].snapshot_count == expected
 
-        assert logs[-1].snapshot_count == snapshot_max_count
+        assert logs[-1].snapshot_count == min(count, snapshot_max_count)
 
 
 @pytest.mark.PartiallyVerifies(["comp_req__persistency__snapshot_creation_v2"])
