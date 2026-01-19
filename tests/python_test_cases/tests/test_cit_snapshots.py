@@ -60,7 +60,7 @@ class TestSnapshotCountFirstFlush(MaxSnapshotsScenario):
                 "dir": str(temp_dir),
                 "snapshot_max_count": snapshot_max_count,
             },
-            "count": 1,
+            "count": snapshot_max_count,
         }
 
     def test_ok(
@@ -71,9 +71,9 @@ class TestSnapshotCountFirstFlush(MaxSnapshotsScenario):
         snapshot_max_count: int,
         version: str,
     ):
-        if version == "cpp" and snapshot_max_count in [1, 3, 10]:
+        if version == "cpp" and snapshot_max_count in [1, 10]:
             pytest.xfail(
-                reason="https://github.com/eclipse-score/persistency/issues/192 , https://github.com/eclipse-score/persistency/issues/108",
+                reason="https://github.com/eclipse-score/persistency/issues/108",
             )
         assert results.return_code == ResultCode.SUCCESS
 
@@ -84,7 +84,7 @@ class TestSnapshotCountFirstFlush(MaxSnapshotsScenario):
             expected = min(i, snapshot_max_count)
             assert logs[i].snapshot_count == expected
 
-        assert logs[-1].snapshot_count == min(count, snapshot_max_count)
+        assert logs[-1].snapshot_count == snapshot_max_count
 
 
 @pytest.mark.PartiallyVerifies(["comp_req__persistency__snapshot_creation_v2"])
@@ -103,7 +103,7 @@ class TestSnapshotCountFull(TestSnapshotCountFirstFlush):
                 "dir": str(temp_dir),
                 "snapshot_max_count": snapshot_max_count,
             },
-            "count": snapshot_max_count + 1,
+            "count": snapshot_max_count,
         }
 
 
