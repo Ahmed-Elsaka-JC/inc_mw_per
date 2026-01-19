@@ -14,7 +14,8 @@
 
 #include <kvs.hpp>
 
-struct KvsParameters {
+struct KvsParameters
+{
     /// Parse `KvsParameters` from JSON string.
     /// JSON is expected to contain `kvs_parameters` field.
     static KvsParameters from_json(const std::string& json_str);
