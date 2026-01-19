@@ -451,7 +451,6 @@ score::ResultBlank Kvs::flush() {
                 /* Write JSON Data */
                 std::string buf = std::move(buf_res.value());
                 result = write_json_data(buf);
-                std::cout << "KVS flushed to disk." << std::endl;
             }
         }
     }
