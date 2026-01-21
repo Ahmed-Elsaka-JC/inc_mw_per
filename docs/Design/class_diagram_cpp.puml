@@ -12,32 +12,30 @@ skinparam class {
 
 class KvsBuilder <<implementation>> {
     - instance_id: InstanceId
-    - need_defaults : bool
-    - need_kvs : bool
-    - directory: string
+    - need_defaults : KvsDefaults
+    - need_kvs : KvsLoad
+    - backend: IStorageBackend
     - {static} OpenedKvs : std::unordered_map<instanceId, std::shared_ptr<kvs> >
     __
     + KvsBuilder(const InstanceId& instance_id)
     + NeedDefaultsFlag(bool flag) : KvsBuilder&
     + NeedKvsFlag(bool flag) : KvsBuilder&
-    + Dir(std::string&& dir_path) : KvsBuilder&
     + Backend(IStorageBackend backend) : KvsBuilder&
     + Build() : std::shared_ptr<Kvs>
 }
 
-KvsBuilder -[hidden]right- IStorageBackEnd
-IStorageBackEnd -[hidden]right- IKvs
 
-' IStorageBackEnd interface (top middle-right)
-interface IStorageBackEnd <<interface>> {
+
+interface IStorageBackend <<interface>> {
     + LoadKvs(instance_id:InstanceId, snapshot_id:SnapshotId):IKvs
     + LoadDefault(instance_id:InstanceId):IKvs
     + Flush(instance_id:InstanceId, kvs:unordered_map<string,kvs>
     + SnapshotCount(instance_id:InstanceId):Result<size_t>
     + SnapshotRestore(instance_id:InstanceId, snapshot_id:SnapshotId) : Kvs
+    + SnapshotMaxCount() : Result<size_t>
+    + SetSnapshotMaxCount(count:size_t) : ResultBlank
 }
 
-' IKvs interface (top right)
 interface IKvs <<interface>> {
     + Reset()
     + ResetKey(string key):Result<bool>
@@ -55,37 +53,44 @@ interface IKvs <<interface>> {
     + GetHashFilename(snapshot_id:SnapshotId): Result<filesystem::path>
 }
 
-IStorageBackEnd_Mock -[hidden]right- JsonBackEnd
-JsonBackEnd -[hidden]right- IKvs_mock
+
+IStorageBackend -[hidden]right- IKvs
+IStorageBackend_Mock -[hidden]right- JsonBackend
+JsonBackend -[hidden]right- IKvs_mock
 IKvs_mock -[hidden]right- Kvs
 
-' IStorageBackEnd_Mock (middle left)
-class IStorageBackEnd_Mock <<mock>> {
-    + LoadKvs(instance_id:InstanceId, snapshot_id:SnapshotId):Kvs
-    + LoadDefault(instance_id:InstanceId)
+
+class IStorageBackend_Mock <<mock>> {
+    + LoadKvs(instance_id:InstanceId, snapshot_id:SnapshotId):IKvs
+    + LoadDefault(instance_id:InstanceId):IKvs
     + Flush(instance_id:InstanceId, kvs:unordered_map<string,kvs>
     + SnapshotCount(instance_id:InstanceId):Result<size_t>
     + SnapshotRestore(instance_id:InstanceId, snapshot_id:SnapshotId) : Kvs
-    + GetHashFilename(snapshot_id:SnapshotId): Result<filesystem::path>
+    + SnapshotMaxCount() : Result<size_t>
+    + SetSnapshotMaxCount(count:size_t) : ResultBlank
 }
 
-' JsonBackEnd (middle right)
-class JsonBackEnd <<implementation>> {
+class JsonBackend <<implementation>> {
     - Instance_id: InstanceId
     - filename_prefix : score::filesystem::path
     - filesystem : score::filesystem
     - parser : unique_ptr<IjsonParser> parser
     - writer : unique_ptr<IjsonWriter> writer
+    - Directory : string
     __
+    + JsonBackend(instance_id:InstanceId, filename_prefix:score::filesystem::path, filesystem:score::filesystem, Directory:string)
     + LoadKvs(instance_id:InstanceId, snapshot_id:SnapshotId):IKvs
-    + LoadDefault(instance_id:InstanceId)
+    + LoadDefault(instance_id:InstanceId):IKvs
     + Flush(instance_id:InstanceId, kvs:unordered_map<string,kvs>
     + SnapshotCount(instance_id:InstanceId):Result<size_t>
     + SnapshotRestore(instance_id:InstanceId, snapshot_id:SnapshotId) : Kvs
     + GetHashFilename(snapshot_id:SnapshotId): Result<filesystem::path>
+    + Dir(std::string&& dir_path) : Void
+    + SnapshotMaxCount() : Result<size_t>
+    + SetSnapshotMaxCount(count:size_t) : ResultBlank
+
 }
 
-' IKvs_mock (bottom middle-left)
 class IKvs_mock <<mock>> {
     + Reset()
     + ResetKey(string key):Result<bool>
@@ -103,12 +108,11 @@ class IKvs_mock <<mock>> {
     + GetHashFilename(snapshot_id:SnapshotId): Result<filesystem::path>
 }
 
-' Kvs (bottom right)
 class Kvs <<implementation>> {
     + kvs : unordered_map<string, KvsValue>
     + default_kvs : unordered_map<string, KvsValue>
     + logger : unique_ptr<mw::log::logger> logger
-    + Storage_backend : IStorageBackEnd
+    + Storage_backend : IStorageBackend
     __
     + Reset()
     + ResetKey(string key):Result<bool>
@@ -127,21 +131,15 @@ class Kvs <<implementation>> {
 }
 
 ' Relationships
-IStorageBackEnd_Mock -up-|> IStorageBackEnd : implements
-JsonBackEnd -up-|> IStorageBackEnd : implements
+IStorageBackend_Mock -up-|> IStorageBackend : implements
+JsonBackend -up-|> IStorageBackend : implements
 IKvs_mock -up-|> IKvs : implements
 Kvs -up-|> IKvs : implements
 
 ' Dependencies
-KvsBuilder ..> IStorageBackEnd : uses
+KvsBuilder ..> IStorageBackend : uses
 KvsBuilder ..> IKvs : uses
-IStorageBackEnd *-- IKvs : Composes
+IStorageBackend *-- IKvs : Composes
 
-
-note right of KvsBuilder
-    by default json backend is used but other backends
-    can be implemented and passed to the builder through
-    **Backend()** method
-end note
 
 @enduml
