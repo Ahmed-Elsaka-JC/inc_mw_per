@@ -33,7 +33,6 @@ interface IStorageBackend <<interface>> {
     + SnapshotCount(instance_id:InstanceId):Result<size_t>
     + SnapshotRestore(instance_id:InstanceId, snapshot_id:SnapshotId) : Kvs
     + SnapshotMaxCount() : Result<size_t>
-    + SetSnapshotMaxCount(count:size_t) : ResultBlank
 }
 
 interface IKvs <<interface>> {
@@ -67,7 +66,6 @@ class IStorageBackend_Mock <<mock>> {
     + SnapshotCount(instance_id:InstanceId):Result<size_t>
     + SnapshotRestore(instance_id:InstanceId, snapshot_id:SnapshotId) : Kvs
     + SnapshotMaxCount() : Result<size_t>
-    + SetSnapshotMaxCount(count:size_t) : ResultBlank
 }
 
 class JsonBackend <<implementation>> {
@@ -77,8 +75,9 @@ class JsonBackend <<implementation>> {
     - parser : unique_ptr<IjsonParser> parser
     - writer : unique_ptr<IjsonWriter> writer
     - Directory : string
+    - max_snapshot_count : size_t
     __
-    + JsonBackend(instance_id:InstanceId, filename_prefix:score::filesystem::path, filesystem:score::filesystem, Directory:string)
+    + JsonBackend(instance_id:InstanceId, filename_prefix:score::filesystem::path, filesystem:score::filesystem, Directory:string, max_snapshot_count:size_t)
     + LoadKvs(instance_id:InstanceId, snapshot_id:SnapshotId):IKvs
     + LoadDefault(instance_id:InstanceId):IKvs
     + Flush(instance_id:InstanceId, kvs:unordered_map<string,kvs>
@@ -87,7 +86,6 @@ class JsonBackend <<implementation>> {
     + GetHashFilename(snapshot_id:SnapshotId): Result<filesystem::path>
     + Dir(std::string&& dir_path) : Void
     + SnapshotMaxCount() : Result<size_t>
-    + SetSnapshotMaxCount(count:size_t) : ResultBlank
 
 }
 
